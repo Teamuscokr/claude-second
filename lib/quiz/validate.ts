@@ -1,6 +1,5 @@
 import type { Question, Quiz } from "./types";
 
-export const MAX_FILE_BYTES = 1024 * 1024;
 export const MAX_QUESTIONS = 100;
 const OPTION_COUNT = 4;
 // 오류가 너무 많으면 화면이 길어지므로 앞쪽 몇 개만 보여준다.
@@ -61,7 +60,7 @@ function checkQuestion(raw: unknown, no: number): string[] {
   return errors;
 }
 
-// 업로드한 파일의 글자 내용을 검사해 문제 목록으로 바꾼다.
+// 문제지 파일의 글자 내용을 검사해 제목과 문제 목록으로 바꾼다.
 // 하나라도 잘못되면 파일 전체를 받지 않고 오류 목록을 돌려준다. 정의되지 않은 항목은 무시한다.
 export function parseQuizFile(text: string): ParseResult {
   let data: unknown;
@@ -76,11 +75,15 @@ export function parseQuizFile(text: string): ParseResult {
     };
   }
 
-  const questions =
+  const root =
     typeof data === "object" && data !== null && !Array.isArray(data)
-      ? (data as Record<string, unknown>).questions
-      : undefined;
+      ? (data as Record<string, unknown>)
+      : {};
+  const { title, questions } = root;
 
+  if (!isFilledText(title)) {
+    return { ok: false, errors: ["파일에 문제지 제목(title)이 없어요."] };
+  }
   if (!Array.isArray(questions)) {
     return {
       ok: false,
@@ -109,6 +112,7 @@ export function parseQuizFile(text: string): ParseResult {
   }
 
   const quiz: Quiz = {
+    title,
     questions: questions.map((raw) => {
       const q = raw as Question;
       return {

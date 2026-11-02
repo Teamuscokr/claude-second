@@ -1,16 +1,16 @@
+import Link from "next/link";
 import type { QuizResult } from "@/lib/quiz/types";
 
 type Props = {
   result: QuizResult;
   onRetry: () => void;
-  onReset: () => void;
 };
 
 function optionLabel(options: readonly string[], number: number) {
   return `${number}번. ${options[number - 1]}`;
 }
 
-export default function ResultStep({ result, onRetry, onReset }: Props) {
+export default function ResultStep({ result, onRetry }: Props) {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-1 rounded-2xl bg-accent-soft p-6 text-center">
@@ -63,9 +63,9 @@ export default function ResultStep({ result, onRetry, onReset }: Props) {
         <button type="button" className="btn-primary" onClick={onRetry}>
           다시 풀기
         </button>
-        <button type="button" className="btn-secondary" onClick={onReset}>
-          다른 파일 올리기
-        </button>
+        <Link href="/" className="btn-secondary">
+          다른 문제지 고르기
+        </Link>
       </div>
     </section>
   );

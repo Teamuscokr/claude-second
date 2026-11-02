@@ -7,6 +7,7 @@ export type Question = {
 };
 
 export type Quiz = {
+  title: string;
   questions: Question[];
 };
 

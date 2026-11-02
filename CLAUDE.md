@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 프로젝트 개요
 
-선생님이 준 JSON 문제 파일을 업로드해 4지선다 문제를 끝까지 풀고, 마지막에 한 번에 채점해 점수·문항별 정오·해설을 보여주는 교육용 웹앱입니다.
+학생이 `question-papers` 폴더에 미리 준비된 문제지를 목록에서 골라 4지선다 문제를 끝까지 풀고, 마지막에 한 번에 채점해 점수·문항별 정오·해설을 보여주는 교육용 웹앱입니다. (초기 버전은 학생이 JSON 파일을 직접 올리는 방식이었지만 지금은 없앴습니다. PRD.md "버전 기록" 참고)
 
 - 요구사항의 기준 문서는 [PRD.md](PRD.md)입니다. 작업 전에 항상 PRD.md를 읽고 그 내용을 따릅니다.
 - 기술 구성: Next.js(App Router) + TypeScript + Tailwind CSS, npm, Vercel 배포. PC와 휴대폰 화면 모두 지원합니다.
@@ -13,23 +13,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 현재 상태
 
-- 1일차 앱이 만들어져 있고 로컬에서 동작을 확인했습니다. 아직 배포하지 않았습니다(사용자가 따로 요청할 때만 배포).
-- Next.js 16.4 / React 19.3 / Tailwind CSS 4. 학습 데이터와 다른 부분이 있을 수 있으니 Next.js API는 `node_modules/next/dist/docs/`를 확인합니다.
-- Git 저장소가 아닙니다.
-- `sample-questions.json`은 형식 참고용 예시입니다. 앱에 넣거나 자동으로 불러오지 않습니다.
+- 1일차 앱(문제지 목록 선택 방식)이 만들어져 있고 로컬에서 동작을 확인했습니다. 아직 배포하지 않았습니다(사용자가 따로 요청할 때만 배포).
+- Next.js 16.4 / React 19.3 / Tailwind CSS 4, `cacheComponents: true`. 학습 데이터와 다른 부분이 있으니 Next.js API는 `node_modules/next/dist/docs/`를 확인합니다.
+- Git 저장소(브랜치 `main`)입니다. 커밋·GitHub 업로드는 사용자가 요청할 때만 합니다.
+- 문제지 파일(`question-papers/*.json`)의 문제·보기·정답·해설은 사용자의 허락 없이 바꾸지 않습니다. 확인용으로 문제지를 임의로 추가하지 않습니다(필요하면 앱 밖 임시 폴더에서 확인).
 
 ## 명령
 
 - `npm run dev` — 개발 서버(http://localhost:3000). 내장 브라우저로 볼 때는 `.claude/launch.json`의 `quiz-app` 설정으로 실행합니다.
 - `npm run lint` — 코드 검사
-- `npm run build` — 배포용 빌드(타입 검사 포함)
-- 자동 테스트 도구는 아직 없습니다. 검사·채점 기능은 임시 스크립트로 확인했습니다.
+- `npm run build` — 배포용 빌드(타입 검사 포함). 문제지 파일이 하나라도 잘못되면 여기서 파일 이름·문항 번호와 함께 멈춥니다.
+- 자동 테스트 도구는 아직 없습니다. 검사·채점·목록 읽기 기능은 임시 스크립트(scratchpad)로 확인했습니다. Node가 확장자 없는 import를 못 읽으므로 `lib/quiz/*.ts`를 복사해 import에 `.ts`를 붙여 실행했습니다.
 
 ## 구조
 
-- `lib/quiz/` — 화면과 분리된 핵심 기능. `validate.ts`(파일 검사 → `Quiz` 또는 쉬운 오류 문구 목록), `score.ts`(채점, 소수 첫째 자리 반올림), `types.ts`. 2일차에 문제 출처(AI 생성·DB)가 바뀌어도 이 형태(`Quiz`)로 넘기면 화면을 그대로 쓸 수 있습니다.
-- `app/page.tsx` — 브라우저에서만 도는 단계 전환(upload → confirm → solve → result). 서버로 보내는 데이터는 없고, 새로고침하면 처음으로 돌아갑니다.
-- `components/` — 단계별 화면 4개. 풀이 화면(`QuestionStep`)에서는 정답·해설·점수를 화면에 보여주지 않습니다.
+- `question-papers/*.json` — 문제지. 최상위 `title` + `questions`. 파일 이름(확장자 제외)이 주소 `/papers/<파일이름>`이 됩니다.
+- `lib/quiz/` — 화면과 분리된 핵심 기능.
+  - `papers.ts` — 빌드 때 `question-papers`를 파일 이름 순으로 읽고 검사(`loadPapers`, `findPaper`). 경로는 `path.join(process.cwd(), "question-papers", ...)` 꼴로 고정해 둬야 합니다. 변수로 감추면 빌드 도구가 프로젝트 전체를 배포 묶음에 넣는다는 경고가 납니다.
+  - `validate.ts` — 문제지 내용 검사(`Quiz` 또는 쉬운 오류 문구 목록), `score.ts` — 채점(소수 첫째 자리 반올림), `types.ts`.
+  - 2일차에 문제 출처(AI 생성·DB)가 바뀌어도 `Quiz` 형태로 넘기면 화면을 그대로 쓸 수 있습니다.
+- `app/page.tsx` — 홈(문제지 목록, 서버에서 미리 만듦). `app/papers/[id]/page.tsx` — 문제지마다 미리 만드는 페이지. `params`를 읽는 부분은 `<Suspense>` 안에 둬야 개발 도구의 "URL data outside of Suspense" 경고가 나지 않습니다.
+- `components/QuizRunner.tsx` — 브라우저에서만 도는 단계 전환(confirm → solve → result). 새로고침하면 문항 확인 화면으로 돌아갑니다.
+- `components/` 나머지 — 단계별 화면(`ConfirmStep`, `QuestionStep`, `ResultStep`). 풀이 화면(`QuestionStep`)에서는 정답·해설·점수를 화면에 보여주지 않습니다. 원본 JSON이나 정답을 숨기는 보호 기능은 일부러 넣지 않았습니다(PRD 범위 밖).
 - 색은 `app/globals.css`의 변수(밝은/어두운 화면)로 관리하고, 버튼은 `btn-primary`/`btn-secondary`를 씁니다.
 
 ## 작업 환경
@@ -39,10 +44,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 구현 범위 (PRD.md 요약)
 
-- **1일차(지금 만들 기능)**: JSON 업로드 → 문항 수 확인 → 한 문제씩 풀이 → 제출 → 채점·점수·정오·해설. 로컬 실행과 Vercel 배포까지. 로그인·AI 문제 생성·DB 저장은 만들지 않습니다.
+- **1일차(지금 만들 기능)**: 문제지 목록에서 선택 → 문항 확인 → 한 문제씩 풀이 → 제출 → 채점·점수·정오·해설. 로컬 실행과 Vercel 배포까지. 로그인·AI 문제 생성·DB 저장은 만들지 않습니다. 학생 파일 업로드는 현재 요구사항이 아닙니다.
 - **2일차(나중에 추가할 기능)**: 교사 Google 로그인과 학생 이름 기반 게스트 입장, Azure AI 문제 생성, 문제 저장·공개, Firestore 결과 저장, 교사용 성적 조회.
 - 1일차에는 2일차 기능을 붙이기 쉬운 구조로 만들되, 2일차 기능을 미리 구현하지 않습니다.
-- 지켜야 할 핵심 조건: 풀이 중에는 정답 여부·점수·해설을 보여주지 않습니다. 업로드한 파일은 서버로 보내지 않고 브라우저 안에서만 처리합니다. 파일 검증, 점수 반올림, 이동 방식 같은 세부 결정은 PRD.md의 "결정 사항 (1일차)"을 따릅니다.
+- 지켜야 할 핵심 조건: 풀이 중에는 정답 여부·점수·해설을 보여주지 않습니다. 목록 제목은 각 파일의 title에서 읽고 화면에 고정해 적지 않습니다. 파일 검사, 점수 반올림, 이동 방식 같은 세부 결정은 PRD.md의 "결정 사항 (현재)"을 따릅니다.
 
 ## 앱을 만드는 기준
 

@@ -1,91 +1,39 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import UploadStep from "@/components/UploadStep";
-import ConfirmStep from "@/components/ConfirmStep";
-import QuestionStep from "@/components/QuestionStep";
-import ResultStep from "@/components/ResultStep";
-import { gradeQuiz } from "@/lib/quiz/score";
-import type { Answers, Quiz, QuizResult } from "@/lib/quiz/types";
-
-// 업로드 → 문항 확인 → 풀이 → 결과. 모든 처리는 브라우저 안에서만 하고,
-// 새로고침하면 처음 화면으로 돌아간다.
-type Stage =
-  | { step: "upload" }
-  | { step: "confirm"; quiz: Quiz; fileName: string }
-  | { step: "solve"; quiz: Quiz; answers: Answers; index: number }
-  | { step: "result"; quiz: Quiz; result: QuizResult };
-
-function startSolving(quiz: Quiz): Stage {
-  return {
-    step: "solve",
-    quiz,
-    answers: quiz.questions.map(() => null),
-    index: 0,
-  };
-}
+import Link from "next/link";
+import { loadPapers } from "@/lib/quiz/papers";
 
 export default function Home() {
-  const [stage, setStage] = useState<Stage>({ step: "upload" });
-
-  // 화면이 바뀌면 맨 위부터 보이게 한다.
-  const scrollKey = stage.step === "solve" ? `solve-${stage.index}` : stage.step;
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [scrollKey]);
-
-  const reset = () => setStage({ step: "upload" });
+  const papers = loadPapers();
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:py-12">
-      {stage.step === "upload" && (
-        <UploadStep
-          onLoaded={(quiz, fileName) =>
-            setStage({ step: "confirm", quiz, fileName })
-          }
-        />
-      )}
+      <section className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold">문제지를 골라 주세요</h1>
+          <p className="text-muted">풀고 싶은 문제지를 누르면 시작할 수 있어요.</p>
+        </div>
 
-      {stage.step === "confirm" && (
-        <ConfirmStep
-          fileName={stage.fileName}
-          questionCount={stage.quiz.questions.length}
-          onStart={() => setStage(startSolving(stage.quiz))}
-          onReset={reset}
-        />
-      )}
-
-      {stage.step === "solve" && (
-        <QuestionStep
-          key={stage.index}
-          question={stage.quiz.questions[stage.index]}
-          index={stage.index}
-          total={stage.quiz.questions.length}
-          chosen={stage.answers[stage.index]}
-          onChoose={(option) => {
-            const answers = [...stage.answers];
-            answers[stage.index] = option;
-            setStage({ ...stage, answers });
-          }}
-          onPrev={() => setStage({ ...stage, index: stage.index - 1 })}
-          onNext={() => setStage({ ...stage, index: stage.index + 1 })}
-          onSubmit={() =>
-            setStage({
-              step: "result",
-              quiz: stage.quiz,
-              result: gradeQuiz(stage.quiz, stage.answers),
-            })
-          }
-        />
-      )}
-
-      {stage.step === "result" && (
-        <ResultStep
-          result={stage.result}
-          onRetry={() => setStage(startSolving(stage.quiz))}
-          onReset={reset}
-        />
-      )}
+        {papers.length === 0 ? (
+          <p className="rounded-xl border border-line p-4 text-muted">
+            아직 준비된 문제지가 없어요.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {papers.map((paper) => (
+              <li key={paper.id}>
+                <Link
+                  href={`/papers/${encodeURIComponent(paper.id)}`}
+                  className="flex min-h-14 items-center justify-between gap-3 rounded-xl border-2 border-line p-4 font-semibold transition-colors hover:border-accent"
+                >
+                  <span>{paper.quiz.title}</span>
+                  <span aria-hidden className="text-muted">
+                    ›
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }
