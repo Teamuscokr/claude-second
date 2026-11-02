@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #5b6270;
+  --line: #e2e5ea;
+  --code: #f4f5f7;
+  --accent: #2563eb;
+  --accent-soft: #eef3ff;
+  --good: #15803d;
+  --bad: #c2410c;
+  --bad-soft: #fff4ed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f1115;
+    --foreground: #ececec;
+    --muted: #a0a7b4;
+    --line: #2c313a;
+    --code: #1a1d23;
+    --accent: #6b9bff;
+    --accent-soft: #172036;
+    --good: #4ade80;
+    --bad: #fb923c;
+    --bad-soft: #2a1a10;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-code: var(--code);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: system-ui, -apple-system, "Apple SD Gothic Neo",
+    "Malgun Gothic", "Noto Sans KR", sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  word-break: keep-all;
+}
+
+@layer components {
+  .btn-primary,
+  .btn-secondary {
+    @apply inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl px-6 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply bg-accent text-white hover:opacity-90 dark:text-background;
+  }
+  .btn-secondary {
+    @apply border-2 border-line hover:border-muted;
+  }
+}
